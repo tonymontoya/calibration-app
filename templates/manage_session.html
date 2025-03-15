@@ -1,0 +1,41 @@
+{% extends 'layout.html' %}
+{% block content %}
+<h2>Manage Session: {{ session.session_name }} (Status: {{ session.status }})</h2>
+<p>
+  <a href="{{ url_for('upload_employees', session_id=session.id) }}">Upload Employees</a> |
+  <a href="{{ url_for('start_session', session_id=session.id) }}">Start Session</a> |
+  <a href="{{ url_for('end_session', session_id=session.id) }}">End Session</a> |
+  <a href="{{ url_for('export_session', session_id=session.id) }}">Export Results</a>
+</p>
+<form method="POST">
+  <table border="1" cellpadding="5">
+    <tr>
+      <th>Employee Name</th>
+      <th>Level</th>
+      <th>Calibration Rating</th>
+      <th>Promotion Offered</th>
+      <th>Calibration Votes</th>
+      <th>Promotion Votes</th>
+    </tr>
+    {% for emp in session.employees %}
+    <tr>
+      <td><input type="text" name="name_{{ emp.id }}" value="{{ emp.name }}"></td>
+      <td><input type="text" name="level_{{ emp.id }}" value="{{ emp.level }}"></td>
+      <td><input type="text" name="cal_rating_{{ emp.id }}" value="{{ emp.calibration_rating }}"></td>
+      <td><input type="text" name="promo_{{ emp.id }}" value="{{ emp.promotion_offered }}"></td>
+      <td>
+        {% for action, count in vote_data[emp.id].calibration.items() %}
+          {{ action }}: {{ count }}<br>
+        {% endfor %}
+      </td>
+      <td>
+        {% for action, count in vote_data[emp.id].promotion.items() %}
+          {{ action }}: {{ count }}<br>
+        {% endfor %}
+      </td>
+    </tr>
+    {% endfor %}
+  </table>
+  <button type="submit">Update Employee Data</button>
+</form>
+{% endblock %}
