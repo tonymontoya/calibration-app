@@ -1,0 +1,54 @@
+{% extends 'layout.html' %}
+{% block content %}
+<h2>Calibration Session: {{ session.session_name }}</h2>
+<p>Contributor: {{ contributor.first_name }} {{ contributor.last_name }}</p>
+<form method="POST">
+  {% for level, employees in levels.items() %}
+    <h3>Level: {{ level }}</h3>
+    <table border="1" cellpadding="5">
+      <tr>
+        <th>Employee Name</th>
+        <th>Calibration Rating</th>
+        <th>Your Calibration Vote</th>
+        <th>Promotion Offered</th>
+        <th>Your Promotion Vote</th>
+        <th>Calibration Votes</th>
+        <th>Promotion Votes</th>
+      </tr>
+      {% for emp in employees %}
+      <tr>
+        <td>{{ emp.name }}</td>
+        <td>{{ emp.calibration_rating }}</td>
+        <td>
+          <select name="calibration_{{ emp.id }}">
+            <option value="Agree">Agree</option>
+            <option value="Move up">Move up</option>
+            <option value="Move down">Move down</option>
+            <option value="No opinion">No opinion</option>
+          </select>
+        </td>
+        <td>{{ emp.promotion_offered }}</td>
+        <td>
+          <select name="promotion_{{ emp.id }}">
+            <option value="Agree">Agree</option>
+            <option value="Disagree">Disagree</option>
+            <option value="No opinion">No opinion</option>
+          </select>
+        </td>
+        <td>
+          {% for action, count in vote_data[emp.id].calibration.items() %}
+            {{ action }}: {{ count }}<br>
+          {% endfor %}
+        </td>
+        <td>
+          {% for action, count in vote_data[emp.id].promotion.items() %}
+            {{ action }}: {{ count }}<br>
+          {% endfor %}
+        </td>
+      </tr>
+      {% endfor %}
+    </table>
+  {% endfor %}
+  <button type="submit">Submit Votes</button>
+</form>
+{% endblock %}
