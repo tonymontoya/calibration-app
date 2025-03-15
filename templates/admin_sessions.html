@@ -1,0 +1,12 @@
+{% extends 'layout.html' %}
+{% block content %}
+<h2>Calibration Sessions</h2>
+<a href="{{ url_for('new_session') }}">Create New Session</a>
+<ul>
+  {% for session in sessions %}
+    <li>
+      <a href="{{ url_for('manage_session', session_id=session.id) }}">{{ session.session_name }} ({{ session.status }})</a>
+    </li>
+  {% endfor %}
+</ul>
+{% endblock %}
