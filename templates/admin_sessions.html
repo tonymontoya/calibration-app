@@ -1,12 +1,38 @@
 {% extends 'layout.html' %}
 {% block content %}
-<h2>Calibration Sessions</h2>
-<a href="{{ url_for('new_session') }}">Create New Session</a>
-<ul>
-  {% for session in sessions %}
-    <li>
-      <a href="{{ url_for('manage_session', session_id=session.id) }}">{{ session.session_name }} ({{ session.status }})</a>
-    </li>
-  {% endfor %}
-</ul>
+<div class="mt-4">
+  <h2>Calibration Sessions</h2>
+  <a href="{{ url_for('new_session') }}" class="btn btn-primary mb-3">Create New Session</a>
+  <table id="sessionsTable" class="table table-striped table-bordered">
+    <thead>
+      <tr>
+        <th>Session Name</th>
+        <th>Fiscal Year</th>
+        <th>Admin Name</th>
+        <th>Status</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for session in sessions %}
+      <tr>
+        <td>{{ session.session_name }}</td>
+        <td>{{ session.fiscal_year }}</td>
+        <td>{{ session.admin_name }}</td>
+        <td>{{ session.status }}</td>
+        <td>
+          <a href="{{ url_for('manage_session', session_id=session.id) }}" class="btn btn-sm btn-info">Manage</a>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+$(document).ready(function(){
+    $('#sessionsTable').DataTable();
+});
+</script>
 {% endblock %}
