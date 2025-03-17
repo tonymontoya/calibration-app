@@ -6,32 +6,10 @@ set -e
 # ---------------------------
 echo "Updating system packages..."
 sudo apt-get update
-sudo apt-get install -y python3 python3-pip python3-venv build-essential libpq-dev nginx postgresql postgresql-contrib
+sudo apt-get install -y python3 python3-pip python3-venv build-essential nginx
 
 # ---------------------------
-# 2. Configure PostgreSQL database and user
-# ---------------------------
-# Set these variables as needed
-DB_USER="calibration_user"
-DB_PASSWORD="yourpassword"
-DB_NAME="calibration_db"
-
-echo "Configuring PostgreSQL..."
-sudo -u postgres psql <<EOF
-DO
-\$do\$
-BEGIN
-   IF NOT EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = '$DB_USER') THEN
-      CREATE ROLE $DB_USER WITH LOGIN PASSWORD '$DB_PASSWORD';
-   END IF;
-END
-\$do\$;
-DROP DATABASE IF EXISTS $DB_NAME;
-CREATE DATABASE $DB_NAME OWNER $DB_USER;
-EOF
-
-# ---------------------------
-# 3. Set up application directory and Python environment
+# 2. Set up application directory and Python environment
 # ---------------------------
 # Change APP_DIR to your preferred location
 APP_DIR="/opt/calibration_app"
@@ -45,18 +23,18 @@ python3 -m venv $APP_DIR/venv
 echo "Activating virtual environment and installing Python dependencies..."
 source $APP_DIR/venv/bin/activate
 pip install --upgrade pip
-pip install flask flask_sqlalchemy gunicorn psycopg2-binary pandas
+pip install flask flask_sqlalchemy gunicorn pandas
 
 # (Optional) Clone your application repository here if not already present.
 # For example: git clone <your_repo_url> $APP_DIR
 
 # ---------------------------
-# 4. Create systemd service for Gunicorn
+# 3. Create systemd service for Gunicorn
 # ---------------------------
-echo "Creating systemd service file for Gunicorn..."
+echo "Creating systemd service file for the calibration app..."
 sudo tee /etc/systemd/system/calibration_app.service > /dev/null <<EOF
 [Unit]
-Description=Gunicorn instance to serve Calibration App
+Description=Gunicorn instance to serve Calibration App using SQLite
 After=network.target
 
 [Service]
@@ -76,7 +54,7 @@ sudo systemctl start calibration_app.service
 sudo systemctl enable calibration_app.service
 
 # ---------------------------
-# 5. Configure Nginx as reverse proxy
+# 4. Configure Nginx as a reverse proxy
 # ---------------------------
 # Replace "your_domain_or_IP" with your actual domain name or server IP
 NGINX_CONFIG="/etc/nginx/sites-available/calibration_app"
@@ -99,4 +77,4 @@ echo "Enabling Nginx site and restarting Nginx..."
 sudo ln -sf $NGINX_CONFIG /etc/nginx/sites-enabled/
 sudo nginx -t && sudo systemctl restart nginx
 
-echo "Setup complete. The calibration app and PostgreSQL database are installed and configured."
+echo "Setup complete. The calibration app using SQLite is installed and configured."
