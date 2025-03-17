@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Calibration App</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <!-- Bootstrap CSS -->
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+  <style>
+    body { padding-top: 70px; }
+  </style>
+</head>
+<body>
+  <!-- Navigation Bar -->
+  <nav class="navbar navbar-expand-md navbar-dark bg-primary fixed-top">
+    <a class="navbar-brand" href="/">Calibration App</a>
+  </nav>
+
+  <!-- Main Container -->
+  <div class="container mt-5">
+    <!-- Jumbotron Header -->
+    <div class="jumbotron">
+      <h1 class="display-4">Welcome to the Calibration App</h1>
+      <p class="lead">Easily conduct employee calibration sessions asynchronously. Choose your role below to get started.</p>
+    </div>
+
+    <!-- Role Selection Cards -->
+    <div class="row">
+      <!-- Admin Card -->
+      <div class="col-md-6 mb-4">
+        <div class="card h-100">
+          <div class="card-header bg-info text-white">
+            Admin Features
+          </div>
+          <div class="card-body">
+            <p class="card-text">
+              Manage calibration sessions, upload employee data, start or end sessions, and export results.
+            </p>
+            <a href="/admin/sessions" class="btn btn-primary">Go to Admin Panel</a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Contributor Card -->
+      <div class="col-md-6 mb-4">
+        <div class="card h-100">
+          <div class="card-header bg-warning text-white">
+            Contributor Features
+          </div>
+          <div class="card-body">
+            <p class="card-text">
+              Join an active calibration session and provide your input on employee ratings and promotions.
+            </p>
+            <div class="form-group">
+              <label for="sessionId">Enter Session ID:</label>
+              <input type="text" id="sessionId" class="form-control" placeholder="e.g. 1">
+            </div>
+            <button id="joinContributor" class="btn btn-success">Join as Contributor</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- jQuery and Bootstrap JS -->
+  <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+  <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.bundle.min.js"></script>
+  <script>
+    // Redirect the contributor based on the session ID entered
+    document.getElementById('joinContributor').addEventListener('click', function() {
+      var sessionId = document.getElementById('sessionId').value.trim();
+      if(sessionId === "") {
+        alert("Please enter a valid Session ID");
+      } else {
+        window.location.href = "/session/" + sessionId + "/register";
+      }
+    });
+  </script>
+</body>
+</html>
