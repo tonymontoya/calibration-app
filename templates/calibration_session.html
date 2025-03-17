@@ -1,54 +1,103 @@
 {% extends 'layout.html' %}
 {% block content %}
-<h2>Calibration Session: {{ session.session_name }}</h2>
-<p>Contributor: {{ contributor.first_name }} {{ contributor.last_name }}</p>
-<form method="POST">
-  {% for level, employees in levels.items() %}
-    <h3>Level: {{ level }}</h3>
-    <table border="1" cellpadding="5">
-      <tr>
-        <th>Employee Name</th>
-        <th>Calibration Rating</th>
-        <th>Your Calibration Vote</th>
-        <th>Promotion Offered</th>
-        <th>Your Promotion Vote</th>
-        <th>Calibration Votes</th>
-        <th>Promotion Votes</th>
-      </tr>
-      {% for emp in employees %}
-      <tr>
-        <td>{{ emp.name }}</td>
-        <td>{{ emp.calibration_rating }}</td>
-        <td>
-          <select name="calibration_{{ emp.id }}">
-            <option value="Agree">Agree</option>
-            <option value="Move up">Move up</option>
-            <option value="Move down">Move down</option>
-            <option value="No opinion">No opinion</option>
-          </select>
-        </td>
-        <td>{{ emp.promotion_offered }}</td>
-        <td>
-          <select name="promotion_{{ emp.id }}">
-            <option value="Agree">Agree</option>
-            <option value="Disagree">Disagree</option>
-            <option value="No opinion">No opinion</option>
-          </select>
-        </td>
-        <td>
-          {% for action, count in vote_data[emp.id].calibration.items() %}
-            {{ action }}: {{ count }}<br>
+<div class="mt-4">
+  <h2>Calibration Session: {{ session.session_name }}</h2>
+  <p>Contributor: <strong>{{ contributor.first_name }} {{ contributor.last_name }}</strong></p>
+  <form id="voteForm" novalidate>
+    {% for level, employees in levels.items() %}
+      <h4 class="mt-4">Level: {{ level }}</h4>
+      <table class="table table-striped table-bordered voteTable" style="width:100%">
+        <thead class="thead-light">
+          <tr>
+            <th>Employee Name</th>
+            <th>Calibration Rating</th>
+            <th>Your Calibration Vote</th>
+            <th>Promotion Offered</th>
+            <th>Your Promotion Vote</th>
+            <th>Calibration Votes</th>
+            <th>Promotion Votes</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for emp in employees %}
+          <tr>
+            <td>{{ emp.name }}</td>
+            <td>{{ emp.calibration_rating }}</td>
+            <td>
+              <select class="form-control" name="calibration_{{ emp.id }}" required>
+                <option value="">Select</option>
+                <option value="Agree">Agree</option>
+                <option value="Move up">Move up</option>
+                <option value="Move down">Move down</option>
+                <option value="No opinion">No opinion</option>
+              </select>
+            </td>
+            <td>{{ emp.promotion_offered }}</td>
+            <td>
+              <select class="form-control" name="promotion_{{ emp.id }}" required>
+                <option value="">Select</option>
+                <option value="Agree">Agree</option>
+                <option value="Disagree">Disagree</option>
+                <option value="No opinion">No opinion</option>
+              </select>
+            </td>
+            <td>
+              {% for action, count in vote_data[emp.id].calibration.items() %}
+                <span class="badge badge-info">{{ action }}: {{ count }}</span><br>
+              {% endfor %}
+            </td>
+            <td>
+              {% for action, count in vote_data[emp.id].promotion.items() %}
+                <span class="badge badge-warning">{{ action }}: {{ count }}</span><br>
+              {% endfor %}
+            </td>
+          </tr>
           {% endfor %}
-        </td>
-        <td>
-          {% for action, count in vote_data[emp.id].promotion.items() %}
-            {{ action }}: {{ count }}<br>
-          {% endfor %}
-        </td>
-      </tr>
-      {% endfor %}
-    </table>
-  {% endfor %}
-  <button type="submit">Submit Votes</button>
-</form>
+        </tbody>
+      </table>
+    {% endfor %}
+    <button type="submit" class="btn btn-primary">Submit Votes</button>
+  </form>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+$(document).ready(function(){
+    // Initialize DataTables on vote tables
+    $('.voteTable').DataTable({
+      paging: false,
+      searching: false,
+      info: false
+    });
+
+    // AJAX vote submission
+    $('#voteForm').on('submit', function(e){
+      e.preventDefault();
+      var voteData = {};
+      // Loop through each select input and collect the vote for each employee.
+      $('#voteForm select').each(function(){
+        var nameAttr = $(this).attr('name');
+        var parts = nameAttr.split('_'); // expected format: calibration_EMPID or promotion_EMPID
+        var type = parts[0];
+        var empId = parts[1];
+        if(!voteData[empId]) { voteData[empId] = {}; }
+        voteData[empId][type] = $(this).val();
+      });
+      $.ajax({
+        url: "{{ url_for('submit_votes', session_id=session.id, contributor_id=contributor.id) }}",
+        type: "POST",
+        contentType: "application/json",
+        data: JSON.stringify(voteData),
+        success: function(response){
+          Swal.fire('Success', response.message, 'success').then(function(){
+            location.reload();
+          });
+        },
+        error: function(){
+          Swal.fire('Error', 'There was an error submitting your votes.', 'error');
+        }
+      });
+    });
+});
+</script>
 {% endblock %}
