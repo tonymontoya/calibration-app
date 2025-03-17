@@ -52,6 +52,10 @@ def create_tables():
 # ---------------------------
 # Admin Routes
 # ---------------------------
+@app.route('/')
+def home():
+    return render_template('index.html')
+
 @app.route('/admin/sessions')
 def admin_sessions():
     sessions = CalibrationSession.query.all()
