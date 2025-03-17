@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, flash, send_file
+from flask import Flask, render_template, request, redirect, url_for, flash, send_file, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import func
 import os, io, csv
@@ -18,7 +18,7 @@ class CalibrationSession(db.Model):
     session_name = db.Column(db.String(100), nullable=False)
     fiscal_year = db.Column(db.String(10), nullable=False)
     admin_name = db.Column(db.String(100), nullable=False)
-    status = db.Column(db.String(20), default='created')  # can be 'created', 'active', or 'closed'
+    status = db.Column(db.String(20), default='created')  # created, active, or closed
     employees = db.relationship('Employee', backref='session', lazy=True)
     contributors = db.relationship('Contributor', backref='session', lazy=True)
 
@@ -52,7 +52,6 @@ def create_tables():
 # ---------------------------
 # Admin Routes
 # ---------------------------
-
 @app.route('/admin/sessions')
 def admin_sessions():
     sessions = CalibrationSession.query.all()
@@ -75,7 +74,7 @@ def new_session():
 def manage_session(session_id):
     session_obj = CalibrationSession.query.get_or_404(session_id)
     if request.method == 'POST':
-        # Allow admin to update employee records inline
+        # Update employee records inline
         for emp in session_obj.employees:
             emp.name = request.form.get(f'name_{emp.id}', emp.name)
             emp.level = request.form.get(f'level_{emp.id}', emp.level)
@@ -84,7 +83,6 @@ def manage_session(session_id):
         db.session.commit()
         flash('Employee records updated!', 'success')
         return redirect(url_for('manage_session', session_id=session_id))
-    # Aggregate vote counts for display
     vote_data = {}
     for emp in session_obj.employees:
         cal_votes = db.session.query(Vote.calibration_action, func.count(Vote.id)).filter(Vote.employee_id == emp.id).group_by(Vote.calibration_action).all()
@@ -168,7 +166,6 @@ def export_session(session_id):
 # ---------------------------
 # Contributor Routes
 # ---------------------------
-
 @app.route('/session/<int:session_id>/register', methods=['GET', 'POST'])
 def register_contributor(session_id):
     session_obj = CalibrationSession.query.get_or_404(session_id)
@@ -181,32 +178,13 @@ def register_contributor(session_id):
         return redirect(url_for('calibration_session', session_id=session_id, contributor_id=contributor.id))
     return render_template('register_contributor.html', session=session_obj)
 
-@app.route('/session/<int:session_id>/contributor/<int:contributor_id>', methods=['GET', 'POST'])
+@app.route('/session/<int:session_id>/contributor/<int:contributor_id>', methods=['GET'])
 def calibration_session(session_id, contributor_id):
     session_obj = CalibrationSession.query.get_or_404(session_id)
     contributor = Contributor.query.get_or_404(contributor_id)
-    # Group employees by level for display
     levels = {}
     for emp in session_obj.employees:
         levels.setdefault(emp.level, []).append(emp)
-    if request.method == 'POST':
-        # Process vote submissions for each employee
-        for emp in session_obj.employees:
-            cal_action = request.form.get(f'calibration_{emp.id}')
-            promo_action = request.form.get(f'promotion_{emp.id}')
-            if cal_action and promo_action:
-                vote = Vote.query.filter_by(contributor_id=contributor.id, employee_id=emp.id).first()
-                if not vote:
-                    vote = Vote(contributor_id=contributor.id, employee_id=emp.id,
-                                calibration_action=cal_action, promotion_action=promo_action)
-                    db.session.add(vote)
-                else:
-                    vote.calibration_action = cal_action
-                    vote.promotion_action = promo_action
-        db.session.commit()
-        flash('Your votes have been recorded!', 'success')
-        return redirect(url_for('calibration_session', session_id=session_id, contributor_id=contributor.id))
-    # Aggregate votes for display alongside employee records
     vote_data = {}
     for emp in session_obj.employees:
         cal_votes = db.session.query(Vote.calibration_action, func.count(Vote.id)).filter(Vote.employee_id == emp.id).group_by(Vote.calibration_action).all()
@@ -216,6 +194,27 @@ def calibration_session(session_id, contributor_id):
             'promotion': dict(promo_votes)
         }
     return render_template('calibration_session.html', session=session_obj, contributor=contributor, levels=levels, vote_data=vote_data)
+
+# API endpoint for AJAX vote submission
+@app.route('/api/session/<int:session_id>/contributor/<int:contributor_id>/vote', methods=['POST'])
+def submit_votes(session_id, contributor_id):
+    session_obj = CalibrationSession.query.get_or_404(session_id)
+    contributor = Contributor.query.get_or_404(contributor_id)
+    data = request.get_json()
+    for emp_id, votes in data.items():
+        cal_action = votes.get('calibration')
+        promo_action = votes.get('promotion')
+        if cal_action and promo_action:
+            vote = Vote.query.filter_by(contributor_id=contributor.id, employee_id=emp_id).first()
+            if not vote:
+                vote = Vote(contributor_id=contributor.id, employee_id=emp_id,
+                            calibration_action=cal_action, promotion_action=promo_action)
+                db.session.add(vote)
+            else:
+                vote.calibration_action = cal_action
+                vote.promotion_action = promo_action
+    db.session.commit()
+    return jsonify({"status": "success", "message": "Votes recorded"})
 
 if __name__ == '__main__':
     app.run(debug=True)
